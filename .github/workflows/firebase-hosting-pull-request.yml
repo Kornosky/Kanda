@@ -19,10 +19,9 @@ jobs:
       - run: flutter pub get
       - run: flutter config --enable-web
       - run: flutter build web
-      - name: Deploy to Firebase
-        uses: w9jds/firebase-action@master
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          args: deploy --only hosting --public build/web
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          PROJECT_ID: default
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KANDA_3F009 }}
+          projectId: your-firebase-project-id  # Replace with your Firebase project ID
