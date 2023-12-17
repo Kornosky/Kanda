@@ -43,6 +43,7 @@ dependencies:
   particle_field: any
   rnd: any
   animate_gradient: any
+  firebase_storage: any
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

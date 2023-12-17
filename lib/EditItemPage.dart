@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -173,6 +174,27 @@ class _EditItemPageState extends State<EditItemPage> {
       setState(() {
         _pickedImage = File(pickedFile.path);
       });
+
+      // Upload the image to Firebase Storage
+      uploadImageToFirebaseStorage();
+    }
+  }
+
+  Future<void> uploadImageToFirebaseStorage() async {
+    try {
+      final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final firebase_storage.Reference ref = firebase_storage
+          .FirebaseStorage.instance
+          .ref()
+          .child('images/$fileName.jpg');
+
+      await ref.putFile(_pickedImage!);
+
+      // Get the URL of the uploaded image
+      _pickedImage = File(await ref.getDownloadURL());
+      print('Image uploaded. URL: $_pickedImage.path');
+    } catch (e) {
+      print('Error uploading image: $e');
     }
   }
 

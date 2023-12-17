@@ -51,15 +51,11 @@ class DatabaseHelper {
   // Update operation
   Future<void> updateItem(
       String itemId, Map<String, dynamic> updatedData) async {
-    print('Updating item $itemId with data $updatedData');
-
     // Convert the int ID to a String
     String documentId = itemId.toString();
 
     // Use the String ID to update the document
     await _firestore.collection('items').doc(documentId).update(updatedData);
-
-    print('Update completed');
   }
 
   // Delete operation // TODO: Overload versions of this
