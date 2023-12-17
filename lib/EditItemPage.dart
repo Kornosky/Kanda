@@ -200,7 +200,7 @@ class _EditItemPageState extends State<EditItemPage> {
   // Method to delete the item
   void deleteItem() {
     // Delete the item from the database using widget.dbHelper
-    //TODO allow deletion if it doesn't exist on database
+    //TODO allow deletion if it doesn't exist on databasee
     widget.dbHelper.deleteItem(widget.item.id!);
 
     // Navigate back to the previous screen
