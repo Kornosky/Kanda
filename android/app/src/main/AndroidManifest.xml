@@ -29,5 +29,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.google.firebase.components:com.google.firebase.analytics.FirebaseAnalyticsRegistrar"
+            android:value="com.google.firebase.components.ComponentRegistrar" />
+        <!-- ... other Firebase-related meta-data ... -->
     </application>
 </manifest>

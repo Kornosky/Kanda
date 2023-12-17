@@ -34,7 +34,11 @@ dependencies:
   path: ^1.8.3
   intl: ^0.17.0 # Add the latest version of the intl package
   image_picker: ^1.0.5
-
+  flutter_local_notifications: ^16.2.0
+  timezone: ^0.9.0
+  cloud_firestore: ^4.13.6
+  firebase_core: ^2.24.2
+  firebase_auth: any
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -49,7 +53,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  flutter_lints: ^3.0.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
