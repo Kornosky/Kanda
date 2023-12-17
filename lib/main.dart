@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:animate_gradient/animate_gradient.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 //If you just want the latest
@@ -15,10 +17,13 @@ import 'GamesScreen.dart';
 import 'ItemDetailsScreen.dart';
 import 'ItemModel.dart';
 import 'MyApp.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MyApp());
 }
 
@@ -84,24 +89,24 @@ class _MyHomePageState extends State<MyHomePage> {
     // Subtract one day from the item date
     tz.TZDateTime notificationDate = itemDate.subtract(const Duration(days: 1));
 
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      item.id,
-      item.title,
-      item.description, //TODO: make this more interesting
-      notificationDate, // Schedule notification 1 day before the item date
-      platformChannelSpecifics,
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
-    // Show the notification immediately (if you want to)
-    await flutterLocalNotificationsPlugin.show(
-      item.id,
-      item.title,
-      item.description, // TODO: make this more interesting
-      platformChannelSpecifics,
-      payload: 'Not present',
-    );
+    // await flutterLocalNotificationsPlugin.zonedSchedule(
+    //   item.id,
+    //   item.title,
+    //   item.description, //TODO: make this more interesting
+    //   notificationDate, // Schedule notification 1 day before the item date
+    //   platformChannelSpecifics,
+    //   androidAllowWhileIdle: true,
+    //   uiLocalNotificationDateInterpretation:
+    //       UILocalNotificationDateInterpretation.absoluteTime,
+    // );
+    // // Show the notification immediately (if you want to)
+    // await flutterLocalNotificationsPlugin.show(
+    //   item.id,
+    //   item.title,
+    //   item.description, // TODO: make this more interesting
+    //   platformChannelSpecifics,
+    //   payload: 'Not present',
+    // );
   }
 
   Future<void> scheduleRandomNotification() async {
@@ -138,25 +143,25 @@ class _MyHomePageState extends State<MyHomePage> {
         android: androidPlatformChannelSpecifics,
       );
 
-      // Schedule the notification for the random item
-      await flutterLocalNotificationsPlugin.zonedSchedule(
-        randomItem.id,
-        randomItem.title,
-        randomItem.description, //TODO: make this more interesting
-        scheduledTZTime,
-        platformChannelSpecifics,
-        // androidScheduleMode: true,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-      // Show the notification immediately (if you want to)
-      await flutterLocalNotificationsPlugin.show(
-        randomItem.id,
-        randomItem.title,
-        randomItem.description, // TODO: make this more interesting
-        platformChannelSpecifics,
-        payload: 'Not present',
-      );
+      // // Schedule the notification for the random item
+      // await flutterLocalNotificationsPlugin.zonedSchedule(
+      //   randomItem.id,
+      //   randomItem.title,
+      //   randomItem.description, //TODO: make this more interesting
+      //   scheduledTZTime,
+      //   platformChannelSpecifics,
+      //   // androidScheduleMode: true,
+      //   uiLocalNotificationDateInterpretation:
+      //       UILocalNotificationDateInterpretation.absoluteTime,
+      // );
+      // // Show the notification immediately (if you want to)
+      // await flutterLocalNotificationsPlugin.show(
+      //   randomItem.id,
+      //   randomItem.title,
+      //   randomItem.description, // TODO: make this more interesting
+      //   platformChannelSpecifics,
+      //   payload: 'Not present',
+      // );
     }
   }
 
@@ -184,27 +189,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
 // Function to add a new item
   void addItem() async {
-    // Retrieve the highest existing ID from the database
-    List<ItemModel> existingItems = await dbHelper.getAllItems();
-    int maxId = existingItems.isEmpty
-        ? 0
-        : existingItems.map((item) => item.id).reduce((a, b) => a > b ? a : b);
-
-    // Generate the new ID by incrementing the highest existing ID
-    int newId = maxId + 1;
-
-    // Add a new item with the generated ID and other default values
-    ItemModel newItem = ItemModel(
-      id: newId,
-      title: 'New Item',
-      date: DateTime.now().millisecondsSinceEpoch,
-      isSelected: false,
-      description: 'Description for the new item',
-      imagePath: null,
-    );
-
-    // Insert the item into the database
-    await dbHelper.insertItem(newItem);
+    // Insert the item into the database and get the Firestore-assigned ID
+    ItemModel newItem = await dbHelper.addItem();
 
     // Load items from the database again to refresh the list
     await loadItems();
@@ -256,67 +242,80 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      body: FutureBuilder<List<ItemModel>>(
-        future: dbHelper.getAllItems(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
-          } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Text('No items found.');
-          } else {
-            return ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                ItemModel item = snapshot.data![index];
+      body: Builder(
+        builder: (context) => AnimateGradient(
+          duration: Duration(seconds: 25),
+          primaryColors: [
+            Theme.of(context).primaryColor,
+            Colors.pinkAccent,
+          ],
+          secondaryColors: [
+            Theme.of(context).primaryColor,
+            Colors.redAccent,
+          ],
+          child: FutureBuilder<List<ItemModel>>(
+            future: dbHelper.getAllItems(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator();
+              } else if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Text('No items found.');
+              } else {
+                return ListView.builder(
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    ItemModel item = snapshot.data![index];
 
-                // Calculate the difference between the current date and the item's date
-                Duration difference = DateTime.now()
-                    .difference(DateTime.fromMillisecondsSinceEpoch(item.date));
+                    // Calculate the difference between the current date and the item's date
+                    Duration difference = DateTime.now().difference(
+                        DateTime.fromMillisecondsSinceEpoch(item.date));
 
-                String formattedDate;
+                    String formattedDate;
 
-                if (difference.isNegative) {
-                  // The item's date is in the future
-                  formattedDate = '${difference.inDays.abs()} days until';
-                } else {
-                  // The item's date is in the past
-                  formattedDate = '${difference.inDays} days ago';
-                }
+                    if (difference.isNegative) {
+                      // The item's date is in the future
+                      formattedDate = '${difference.inDays.abs()} days until';
+                    } else {
+                      // The item's date is in the past
+                      formattedDate = '${difference.inDays} days ago';
+                    }
 
-                return ListTile(
-                  title: Text(item.title),
-                  subtitle: Text(item.description ?? ''),
-                  trailing: Text(formattedDate),
-                  leading: item.imagePath != null &&
-                          File(item.imagePath!).existsSync()
-                      ? SizedBox(
-                          width: 56.0, // Adjust the width as needed
-                          height: 56.0, // Adjust the height as needed
-                          child: Image.file(
-                            File(item.imagePath!),
-                            fit: BoxFit.cover,
+                    return ListTile(
+                      title: Text(item.title),
+                      subtitle: Text(item.description ?? ''),
+                      trailing: Text(formattedDate),
+                      leading: item.imagePath != null &&
+                              (!kIsWeb && File(item.imagePath!).existsSync())
+                          ? SizedBox(
+                              width: 56.0, // Adjust the width as needed
+                              height: 56.0, // Adjust the height as needed
+                              child: Image.file(
+                                File(item.imagePath!),
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : null,
+                      onLongPress: () {
+                        editItem(item);
+                      },
+                      onTap: () {
+                        // Navigate to a new screen to show item details
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ItemDetailsScreen(item: item),
                           ),
-                        )
-                      : null,
-                  onLongPress: () {
-                    editItem(item);
-                  },
-                  onTap: () {
-                    // Navigate to a new screen to show item details
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ItemDetailsScreen(item: item),
-                      ),
+                        );
+                      },
                     );
                   },
                 );
-              },
-            );
-          }
-        },
+              }
+            },
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

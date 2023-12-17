@@ -1,22 +1,41 @@
 class ItemModel {
-  final int id;
-  final String title;
-  final int date;
-  final bool isSelected;
-  final String? description;
-  final String? imagePath;
+  String? id; // Make the ID nullable
+
+  String title;
+  int date;
+  bool isSelected;
+  String description;
+  String? imagePath;
 
   ItemModel({
-    required this.id,
+    this.id,
     required this.title,
     required this.date,
     required this.isSelected,
-    this.description,
+    required this.description,
     this.imagePath,
   });
 
+  // Factory method to create an ItemModel with a generated ID
+  factory ItemModel.generateId({
+    required String title,
+    required int date,
+    required bool isSelected,
+    required String description,
+    String? imagePath,
+  }) {
+    return ItemModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      date: date,
+      isSelected: isSelected,
+      description: description,
+      imagePath: imagePath,
+    );
+  }
+
   ItemModel copyWith({
-    int? id,
+    String? id,
     String? title,
     int? date,
     bool? isSelected,

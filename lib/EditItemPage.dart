@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart'; // Import this for date formatting
@@ -72,13 +73,13 @@ class _EditItemPageState extends State<EditItemPage> {
             SizedBox(
               width: 240.0,
               height: 240.0,
-              child:
-                  _pickedImage != null && File(_pickedImage!.path).existsSync()
-                      ? Image.file(
-                          _pickedImage!,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(),
+              child: _pickedImage != null &&
+                      (!kIsWeb && File(_pickedImage!.path).existsSync())
+                  ? Image.file(
+                      _pickedImage!,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(),
             ),
 
             const SizedBox(height: 16.0),
@@ -178,7 +179,8 @@ class _EditItemPageState extends State<EditItemPage> {
   // Method to delete the item
   void deleteItem() {
     // Delete the item from the database using widget.dbHelper
-    widget.dbHelper.deleteItem(widget.item);
+    //TODO allow deletion if it doesn't exist on database
+    widget.dbHelper.deleteItem(widget.item.id!);
 
     // Navigate back to the previous screen
     Navigator.pop(context);
@@ -195,8 +197,9 @@ class _EditItemPageState extends State<EditItemPage> {
       imagePath: _pickedImage?.path,
     );
 
-    // Update the item in the database using widget.dbHelperr
-    widget.dbHelper.updateItem(updatedItem);
+    // Update the item in the database using widget.dbHelper
+    // Assume doc id will be available by this point
+    widget.dbHelper.updateItem(updatedItem.id!, updatedItem.toMap());
 
     Navigator.pop(context);
   }

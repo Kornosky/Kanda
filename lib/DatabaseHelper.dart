@@ -1,75 +1,69 @@
-// DatabaseHelper.dart
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'ItemModel.dart';
 
 class DatabaseHelper {
-  late Database _database;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  DatabaseHelper() {
-    // Make the constructor asynchronous and await the initialization
-    _initializeDatabase();
-  }
-
-  Future<void> _initializeDatabase() async {
-    _database = await openDatabase(
-      join(await getDatabasesPath(), 'app_database.db'),
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE item_table(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, date INTEGER, isSelected INTEGER, description TEXT, imagePath TEXT)',
-        );
-      },
-      version: 6,
+  // Create operation
+  Future<ItemModel> addItem() async {
+    // Create an ItemModel instance with the added item's data
+    ItemModel newItem = ItemModel(
+      title: 'New Item',
+      date: DateTime.now().millisecondsSinceEpoch,
+      isSelected: false,
+      description: 'Description for the new item',
+      imagePath: null,
     );
+
+    // Add the item to Firestore
+    DocumentReference documentReference =
+        await _firestore.collection('items').add(newItem.toMap());
+
+    // Get the auto-generated document ID
+    String documentId = documentReference.id;
+
+    // Update the item in Firestore to store the document ID
+    await documentReference.update({'id': documentId});
+
+    newItem.id = documentId;
+
+    return newItem;
   }
 
-  Future<void> insertItem(ItemModel item) async {
-    // Ensure that the database has been initialized before using it
-    await _initializeDatabase();
-    await _database.insert(
-      'item_table',
-      item.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  // Insert operation with the Firestore-assigned ID returned
+  Future<String> insertItem(Map<String, dynamic> itemData) async {
+    DocumentReference docRef =
+        await _firestore.collection('items').add(itemData);
+
+    // Return the Firestore-assigned document ID
+    return docRef.id;
   }
 
+  // Read operation
   Future<List<ItemModel>> getAllItems() async {
-    // Ensure that the database has been initialized before using it
-    await _initializeDatabase();
-    final List<Map<String, dynamic>> maps = await _database.query('item_table');
-    return List.generate(maps.length, (i) {
-      return ItemModel.fromMap(maps[i]);
-    });
+    QuerySnapshot querySnapshot = await _firestore.collection('items').get();
+    return querySnapshot.docs
+        .map((doc) => ItemModel.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> deleteItem(ItemModel item) async {
-    // Ensure that the database has been initialized before using it
-    await _initializeDatabase();
-    await _database.delete(
-      'item_table',
-      where: 'id = ?',
-      whereArgs: [item.id],
-    );
+  // Update operation
+  Future<void> updateItem(
+      String itemId, Map<String, dynamic> updatedData) async {
+    print('Updating item $itemId with data $updatedData');
+
+    // Convert the int ID to a String
+    String documentId = itemId.toString();
+
+    // Use the String ID to update the document
+    await _firestore.collection('items').doc(documentId).update(updatedData);
+
+    print('Update completed');
   }
 
-  Future<void> deleteAllItems(List<int> itemIds) async {
-    // Ensure that the database has been initialized before using it
-    await _initializeDatabase();
-    await _database.delete(
-      'item_table',
-      where: 'id IN (${itemIds.join(', ')})',
-    );
-  }
-
-  Future<void> updateItem(ItemModel item) async {
-    // Ensure that the database has been initialized before using it
-    await _initializeDatabase();
-    await _database.update(
-      'item_table',
-      item.toMap(),
-      where: 'id = ?',
-      whereArgs: [item.id],
-    );
+  // Delete operation // TODO: Overload versions of this
+  Future<void> deleteItem(String itemId) async {
+    await _firestore.collection('items').doc(itemId).delete();
   }
 }

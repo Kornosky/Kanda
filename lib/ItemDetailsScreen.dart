@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -14,7 +15,7 @@ class ItemDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Item Details'),
+        title: Text(''),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -48,14 +49,15 @@ class ItemDetailsScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 240.0,
-      child: imagePath != null && File(imagePath).existsSync()
-          ? Image.file(
-              File(imagePath),
-              fit: BoxFit.cover,
-            )
-          : Center(
-              child: Text('No image available'),
-            ),
+      child:
+          imagePath != null && (!kIsWeb && File(item.imagePath!).existsSync())
+              ? Image.file(
+                  File(imagePath),
+                  fit: BoxFit.cover,
+                )
+              : Center(
+                  child: Text('No image available'),
+                ),
     );
   }
 }
