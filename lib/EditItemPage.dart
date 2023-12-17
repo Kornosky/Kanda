@@ -192,7 +192,6 @@ class _EditItemPageState extends State<EditItemPage> {
 
       // Get the URL of the uploaded image
       _pickedImage = File(await ref.getDownloadURL());
-      print('Image uploaded. URL: $_pickedImage.path');
     } catch (e) {
       print('Error uploading image: $e');
     }
