@@ -1,40 +1,27 @@
-name: Deploy to Firebase Hosting on PR
-
+name: CI
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
-      - main
-
+      - master
 jobs:
-  build_and_deploy:
+  build_web:
+    name: Build Flutter (Web)
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Dart
-        uses: dart-lang/setup-dart@1
+      - uses: actions/checkout@v1
+      - uses: subosito/flutter-action@v1
         with:
-          dart-version: '3.2.3'  # Replace with the desired Dart SDK version
-
-      - name: Install dependencies
-        run: dart pub get  # Use `flutter pub get` if it's a Flutter project
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+          channel: 'dev'
+      - run: flutter pub get
+      - run: flutter config --enable-web
+      - run: flutter build web
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
         with:
-          flutter-version: '2.10.0'  # Replace with your Flutter version
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build web
-        run: flutter build web
-
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KANDA_3F009 }}
-          projectId: your-firebase-project-id  # Replace with your Firebase project ID
+          args: deploy --only hosting --public build/web
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_ID: default
