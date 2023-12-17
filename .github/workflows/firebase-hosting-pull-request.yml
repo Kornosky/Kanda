@@ -13,6 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v2
+        with:
+          dart-version: '2.16.0'  # Replace with the desired Dart SDK version
+
+      - name: Install dependencies
+        run: dart pub get  # Use `flutter pub get` if it's a Flutter project
+        
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
