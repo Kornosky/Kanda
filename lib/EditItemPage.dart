@@ -175,7 +175,7 @@ class _EditItemPageState extends State<EditItemPage> {
         _pickedImage = File(pickedFile.path);
       });
 
-      // Upload the image to Firebase Storage
+      // Upload the image to Firebase Storagee
       uploadImageToFirebaseStorage();
     }
   }
