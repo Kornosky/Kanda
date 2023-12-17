@@ -24,4 +24,5 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KANDA_3F009 }}
-          projectId: your-firebase-project-id  # Replace with your Firebase project ID
+          projectId: kanda-3f009
+
