@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'ItemModel.dart';
 
@@ -14,6 +15,8 @@ class DatabaseHelper {
       isSelected: false,
       description: 'Description for the new item',
       imagePath: null,
+      userId:
+          FirebaseAuth.instance.currentUser?.uid, // Include the UID of the user
     );
 
     // Add the item to Firestore
@@ -42,10 +45,24 @@ class DatabaseHelper {
 
   // Read operation
   Future<List<ItemModel>> getAllItems() async {
-    QuerySnapshot querySnapshot = await _firestore.collection('items').get();
-    return querySnapshot.docs
-        .map((doc) => ItemModel.fromMap(doc.data() as Map<String, dynamic>))
-        .toList();
+    // Get the current user from FirebaseAuth
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      String userId = user.uid;
+
+      QuerySnapshot querySnapshot = await _firestore
+          .collection('items')
+          .where('userId', isEqualTo: userId) // Filter by userId
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => ItemModel.fromMap(doc.data() as Map<String, dynamic>))
+          .toList();
+    } else {
+      // Handle the case where the user is not signed in
+      return [];
+    }
   }
 
   // Update operation

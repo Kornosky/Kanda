@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +41,6 @@ class _EditItemPageState extends State<EditItemPage> {
 
   @override
   Widget build(BuildContext context) {
-    print(_pickedImage!.path);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Item'),
@@ -77,15 +77,14 @@ class _EditItemPageState extends State<EditItemPage> {
             SizedBox(
               width: 240.0,
               height: 240.0,
-              child: _pickedImage != null && (_pickedImage!.path.isNotEmpty)
-                  ? (kIsWeb
+              child: _pickedImage != null && _pickedImage!.path.isNotEmpty
+                  ? (_pickedImage!.path.startsWith('http')
                       ? Image.network(
                           _pickedImage!.path,
-                          // Add 'file://' prefix for local file paths on the web
                           fit: BoxFit.cover,
                         )
-                      : Image.network(
-                          _pickedImage!.path,
+                      : Image.file(
+                          File(_pickedImage!.path),
                           fit: BoxFit.cover,
                         ))
                   : Container(),
@@ -206,8 +205,10 @@ class _EditItemPageState extends State<EditItemPage> {
   Future<String?> uploadImageToFirebaseStorage() async {
     // Only concern is uploading to database and return the database path for future retrieval
     final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-    final Reference ref =
-        FirebaseStorage.instance.ref().child('images/itemImages/$fileName.jpg');
+    var userID = FirebaseAuth.instance.currentUser?.uid;
+    final Reference ref = FirebaseStorage.instance
+        .ref()
+        .child('images/itemImages/$userID/$fileName.jpg');
 
     // Check if the image is already in the database
     if (await isImageAlreadyUploaded(_pickedImage!)) {
@@ -243,11 +244,13 @@ class _EditItemPageState extends State<EditItemPage> {
     if (imageCache.containsKey(imageFile.path)) {
       return true;
     }
+    var userID = FirebaseAuth.instance.currentUser?.uid;
 
     // If not in cache, check Firebase Storage
     final String fileName = path.basenameWithoutExtension(imageFile.path);
-    final Reference ref =
-        FirebaseStorage.instance.ref().child('images/itemImages/$fileName.jpg');
+    final Reference ref = FirebaseStorage.instance
+        .ref()
+        .child('images/itemImages/$userID/$fileName.jpg');
 
     try {
       // Attempt to get the download URL

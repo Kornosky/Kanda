@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:animate_gradient/animate_gradient.dart';
+import 'package:firebase_app_check/firebase_app_check.dart' as fireBaseAppCheck;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
@@ -26,6 +28,13 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  if (kIsWeb) {
+    // await fireBaseAppCheck.FirebaseAppCheck.instance
+    //     .activate(webRecaptchaSiteKey: 'YOUR_RECAPTCHA_SITE_KEY');
+  } else {
+    await fireBaseAppCheck.FirebaseAppCheck.instance.activate();
+  }
 
   FirebaseUIAuth.configureProviders([
     EmailAuthProvider(),
@@ -250,6 +259,17 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               // Add more menu items as needed
             ),
+            ListTile(
+              title: const Text('Profile'),
+              onTap: () {
+                // Navigate to the Games screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfileScreen()),
+                );
+              },
+              // Add more menu items as needed
+            ),
           ],
         ),
       ),
@@ -302,14 +322,15 @@ class _MyHomePageState extends State<MyHomePage> {
                           ? SizedBox(
                               width: 56.0, // Adjust the width as needed
                               height: 56.0, // Adjust the height as needed
-                              child: item.imagePath != null
-                                  ? (kIsWeb
+                              child: item.imagePath != null &&
+                                      item.imagePath!.isNotEmpty
+                                  ? (item.imagePath!.startsWith('http')
                                       ? Image.network(
                                           item.imagePath!,
                                           fit: BoxFit.cover,
                                         )
-                                      : Image.network(
-                                          item.imagePath!,
+                                      : Image.file(
+                                          File(item.imagePath!),
                                           fit: BoxFit.cover,
                                         ))
                                   : Container(),
