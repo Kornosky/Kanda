@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart'; // Import this for date formatting
 
@@ -38,6 +39,7 @@ class _EditItemPageState extends State<EditItemPage> {
 
   @override
   Widget build(BuildContext context) {
+    print(_pickedImage!.path);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Item'),
@@ -74,12 +76,17 @@ class _EditItemPageState extends State<EditItemPage> {
             SizedBox(
               width: 240.0,
               height: 240.0,
-              child: _pickedImage != null &&
-                      (!kIsWeb && File(_pickedImage!.path).existsSync())
-                  ? Image.file(
-                      _pickedImage!,
-                      fit: BoxFit.cover,
-                    )
+              child: _pickedImage != null && (_pickedImage!.path.isNotEmpty)
+                  ? (kIsWeb
+                      ? Image.network(
+                          _pickedImage!.path,
+                          // Add 'file://' prefix for local file paths on the web
+                          fit: BoxFit.cover,
+                        )
+                      : Image.file(
+                          File(_pickedImage!.path),
+                          fit: BoxFit.cover,
+                        ))
                   : Container(),
             ),
 
@@ -165,35 +172,75 @@ class _EditItemPageState extends State<EditItemPage> {
     );
   }
 
-  // Method to pick an image using the image_picker package
+  // Todo: Store this in app cache data for use across views
+  Map<String, String> imageCache = {}; // Map to store image download URLs
+
+  // Pick image and just set it as the current image for display purposes
   Future<void> pickImage() async {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
-
+    var image = null;
     if (pickedFile != null) {
-      setState(() {
-        _pickedImage = File(pickedFile.path);
-      });
+      String filePath = pickedFile.path;
 
-      // Upload the image to Firebase Storagee
-      uploadImageToFirebaseStorage();
+      // Check if the image is already in the cache
+      if (imageCache.containsKey(filePath)) {
+        image = File(filePath);
+      } else {
+        if (kIsWeb) {
+          final response = await http.get(Uri.parse(filePath));
+          final List<int> bytes = response.bodyBytes;
+          image = File.fromRawPath(Uint8List.fromList(bytes));
+        } else {
+          image = File(filePath);
+        }
+      }
+
+      setState(() {
+        _pickedImage = image;
+      });
     }
   }
 
-  Future<void> uploadImageToFirebaseStorage() async {
-    try {
-      final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final firebase_storage.Reference ref = firebase_storage
-          .FirebaseStorage.instance
-          .ref()
-          .child('images/$fileName.jpg');
+  Future<void> uploadImageToFirebaseStorage(String fileName) async {
+    if (kIsWeb) {
+      final Reference ref =
+          FirebaseStorage.instance.ref().child('images/$fileName.jpg');
+
+      // Check if the image is already in the cache
+      if (imageCache.containsValue(ref.fullPath)) {
+        // Image is already uploaded, no need to re-upload
+        return;
+      }
+
+      // Upload
+      await ref
+          .putData(
+        await _pickedImage!.readAsBytes(),
+        SettableMetadata(contentType: 'image/jpeg'),
+      )
+          .whenComplete(() async {
+        await ref.getDownloadURL().then((value) {
+          _pickedImage = File(value);
+          imageCache[_pickedImage!.path] = value;
+        });
+      });
+    } else {
+      final Reference ref =
+          FirebaseStorage.instance.ref().child('images/$fileName.jpg');
+
+      // Check if the image is already in the cache
+      if (imageCache.containsValue(ref.fullPath)) {
+        // Image is already uploaded, no need to re-upload
+        return;
+      }
 
       await ref.putFile(_pickedImage!);
-
+      print("FILE PUT!!");
       // Get the URL of the uploaded image
-      _pickedImage = File(await ref.getDownloadURL());
-    } catch (e) {
-      print('Error uploading image: $e');
+      String downloadURL = await ref.getDownloadURL();
+      _pickedImage = File(downloadURL);
+      imageCache[_pickedImage!.path] = downloadURL;
     }
   }
 
@@ -207,7 +254,7 @@ class _EditItemPageState extends State<EditItemPage> {
     Navigator.pop(context);
   }
 
-  void saveChanges() {
+  void saveChanges() async {
     String editedTitle = titleController.text;
     String editedDescription = descriptionController.text;
 
@@ -215,9 +262,23 @@ class _EditItemPageState extends State<EditItemPage> {
       title: editedTitle,
       description: editedDescription,
       date: selectedDate.millisecondsSinceEpoch,
-      imagePath: _pickedImage?.path,
     );
 
+    // Wait for the download URL to be available
+    if (_pickedImage != null && !kIsWeb) {
+      uploadImageToFirebaseStorage(_pickedImage!.path);
+      final Reference ref =
+          FirebaseStorage.instance.ref().child('images/${_pickedImage!.path}');
+
+      try {
+        String downloadURL = await ref.getDownloadURL();
+        updatedItem = updatedItem.copyWith(imagePath: downloadURL);
+      } catch (e) {
+        // Handle the case where the object does not exist
+        print('Object does not exist in Firebase Storage.');
+        // You might want to handle this case based on your application's logic.
+      }
+    }
     // Update the item in the database using widget.dbHelper
     // Assume doc id will be available by this point
     widget.dbHelper.updateItem(updatedItem.id!, updatedItem.toMap());
