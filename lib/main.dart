@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:animate_gradient/animate_gradient.dart';
@@ -299,7 +298,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       subtitle: Text(item.description ?? ''),
                       trailing: Text(formattedDate),
                       leading: item.imagePath != null &&
-                              (!kIsWeb && File(item.imagePath!).existsSync())
+                              (!kIsWeb) // File(item.imagePath!).existsSync()
                           ? SizedBox(
                               width: 56.0, // Adjust the width as needed
                               height: 56.0, // Adjust the height as needed
@@ -309,8 +308,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                           item.imagePath!,
                                           fit: BoxFit.cover,
                                         )
-                                      : Image.file(
-                                          File(item.imagePath!),
+                                      : Image.network(
+                                          item.imagePath!,
                                           fit: BoxFit.cover,
                                         ))
                                   : Container(),
