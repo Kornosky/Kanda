@@ -180,7 +180,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Method to scroll to the bottom
   void scrollToBottom() {
-    //TODO: pass a scroll instance
     scrollController.animateTo(
       scrollController.position.maxScrollExtent,
       duration: const Duration(milliseconds: 300),
