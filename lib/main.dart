@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:animate_gradient/animate_gradient.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_app_check/firebase_app_check.dart' as fireBaseAppCheck;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
@@ -299,22 +299,20 @@ class _MyHomePageState extends State<MyHomePage> {
                           title: Text(item.title),
                           subtitle: Text(item.description ?? ''),
                           trailing: Text(formattedDate),
-                          leading: item.imagePath != null &&
-                                  (!kIsWeb) // File(item.imagePath!).existsSync()
+                          leading: item.imagePath != null && (!kIsWeb)
                               ? SizedBox(
-                                  width: 56.0, // Adjust the width as needed
-                                  height: 56.0, // Adjust the height as needed
+                                  width: 56.0,
+                                  height: 56.0,
                                   child: item.imagePath != null &&
                                           item.imagePath!.isNotEmpty
-                                      ? (item.imagePath!.startsWith('http')
-                                          ? Image.network(
-                                              item.imagePath!,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Image.file(
-                                              File(item.imagePath!),
-                                              fit: BoxFit.cover,
-                                            ))
+                                      ? CachedNetworkImage(
+                                          imageUrl: item.imagePath!,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              CircularProgressIndicator(),
+                                          errorWidget: (context, url, error) =>
+                                              Icon(Icons.error),
+                                        )
                                       : Container(),
                                 )
                               : null,

@@ -20,8 +20,8 @@ class DatabaseHelper {
       isSelected: false,
       description: 'Description for the new item',
       imagePath: null,
-      userId:
-          FirebaseAuth.instance.currentUser?.uid, // Include the UID of the user
+      userId: FirebaseAuth.instance.currentUser?.uid,
+      isPrivate: false, // Include the UID of the user
     );
 
     // Add the item to Firestore

@@ -5,6 +5,7 @@ class ItemModel {
   String title;
   int date;
   bool isSelected;
+  bool isPrivate;
   String description;
   String? imagePath;
 
@@ -14,6 +15,7 @@ class ItemModel {
     required this.title,
     required this.date,
     required this.isSelected,
+    required this.isPrivate,
     required this.description,
     this.imagePath,
   });
@@ -24,6 +26,7 @@ class ItemModel {
     required String title,
     required int date,
     required bool isSelected,
+    required bool isPrivate,
     required String description,
     String? imagePath,
   }) {
@@ -33,6 +36,7 @@ class ItemModel {
       title: title,
       date: date,
       isSelected: isSelected,
+      isPrivate: isPrivate,
       description: description,
       imagePath: imagePath,
     );
@@ -53,6 +57,7 @@ class ItemModel {
       title: title ?? this.title,
       date: date ?? this.date,
       isSelected: isSelected ?? this.isSelected,
+      isPrivate: isPrivate ?? this.isPrivate,
       description: description ?? this.description,
       imagePath: imagePath ?? this.imagePath,
     );
@@ -77,6 +82,7 @@ class ItemModel {
       title: map['title'],
       date: map['date'],
       isSelected: map['isSelected'] == 1,
+      isPrivate: map['isPrivate'] == 1,
       description: map['description'],
       imagePath: map['imagePath'],
     );

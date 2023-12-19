@@ -14,7 +14,7 @@
         "headers": [
           {
             "key": "Access-Control-Allow-Origin",
-            "value": "*"
+            "value": "https://kanda-3f009.web.app/"
           }
         ]
       }

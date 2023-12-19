@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
@@ -78,15 +79,13 @@ class _EditItemPageState extends State<EditItemPage> {
               width: 240.0,
               height: 240.0,
               child: _pickedImage != null && _pickedImage!.path.isNotEmpty
-                  ? (_pickedImage!.path.startsWith('http')
-                      ? Image.network(
-                          _pickedImage!.path,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.file(
-                          File(_pickedImage!.path),
-                          fit: BoxFit.cover,
-                        ))
+                  ? CachedNetworkImage(
+                      imageUrl: _pickedImage!.path,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                          CircularProgressIndicator(),
+                      errorWidget: (context, url, error) => Icon(Icons.error),
+                    )
                   : Container(),
             ),
 
@@ -229,7 +228,6 @@ class _EditItemPageState extends State<EditItemPage> {
       });
     } else {
       await ref.putFile(pickedImage!);
-      print("FILE PUT!!");
       // Get the URL of the uploaded image
       String downloadURL = await ref.getDownloadURL();
       imageCache[pickedImage!.path] = downloadURL;
