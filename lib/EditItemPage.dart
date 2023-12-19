@@ -202,7 +202,7 @@ class _EditItemPageState extends State<EditItemPage> {
     }
   }
 
-  Future<String?> uploadImageToFirebaseStorage() async {
+  Future<String?> uploadImageToFirebaseStorage(File pickedImage) async {
     // Only concern is uploading to database and return the database path for future retrieval
     final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
     var userID = FirebaseAuth.instance.currentUser?.uid;
@@ -210,33 +210,32 @@ class _EditItemPageState extends State<EditItemPage> {
         .ref()
         .child('images/itemImages/$userID/$fileName.jpg');
 
-    // Check if the image is already in the database
-    if (await isImageAlreadyUploaded(_pickedImage!)) {
+    if (await isImageAlreadyUploaded(pickedImage!)) {
       // Image is already uploaded, no need to re-upload
-      return imageCache[_pickedImage!.path];
+      return imageCache[pickedImage!.path];
     }
 
     if (kIsWeb) {
       // Upload
       await ref
           .putData(
-        await _pickedImage!.readAsBytes(),
+        await pickedImage!.readAsBytes(),
         SettableMetadata(contentType: 'image/jpeg'),
       )
           .whenComplete(() async {
         await ref.getDownloadURL().then((value) {
-          imageCache[_pickedImage!.path] = value;
+          imageCache[pickedImage!.path] = value;
         });
       });
     } else {
-      await ref.putFile(_pickedImage!);
+      await ref.putFile(pickedImage!);
       print("FILE PUT!!");
       // Get the URL of the uploaded image
       String downloadURL = await ref.getDownloadURL();
-      imageCache[_pickedImage!.path] = downloadURL;
+      imageCache[pickedImage!.path] = downloadURL;
     }
 
-    return imageCache[_pickedImage!.path];
+    return imageCache[pickedImage!.path];
   }
 
   Future<bool> isImageAlreadyUploaded(File imageFile) async {
@@ -287,7 +286,7 @@ class _EditItemPageState extends State<EditItemPage> {
     // If an image is picked and we are not on the web
     if (_pickedImage != null && !kIsWeb) {
       // Start uploading the image to Firebase Storage
-      Future<String?> uploadTask = uploadImageToFirebaseStorage();
+      Future<String?> uploadTask = uploadImageToFirebaseStorage(_pickedImage!);
 
       // Continue with other operations while the image is uploading
       uploadTask.then((downloadURL) {
