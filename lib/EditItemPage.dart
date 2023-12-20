@@ -82,9 +82,14 @@ class _EditItemPageState extends State<EditItemPage> {
                   ? CachedNetworkImage(
                       imageUrl: _pickedImage!.path,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) =>
-                          CircularProgressIndicator(),
-                      errorWidget: (context, url, error) => Icon(Icons.error),
+                      width: double.infinity, // Adjust to your layout needs
+                      height: double.infinity, // Adjust to your layout needs
+                      placeholder: (context, url) => Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      errorWidget: (context, url, error) => Center(
+                        child: Icon(Icons.error),
+                      ),
                     )
                   : Container(),
             ),

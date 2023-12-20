@@ -10,17 +10,31 @@ import 'ItemModel.dart';
 
 class DatabaseHelper {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+// Update operation to delete multiple items
+  Future<void> deleteItems(List<ItemModel> items) async {
+    final batch = _firestore.batch();
+
+    for (final item in items) {
+      final documentReference = _firestore.collection('items').doc(item.id);
+      batch.delete(documentReference);
+    }
+
+    // Commit the batch operation
+    await batch.commit();
+  }
 
   // Create operation
   Future<ItemModel> addItem() async {
     // Create an ItemModel instance with the added item's data
     ItemModel newItem = ItemModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      dateCreated: DateTime.now().millisecondsSinceEpoch,
       title: 'New Item',
       date: DateTime.now().millisecondsSinceEpoch,
       isSelected: false,
       description: 'Description for the new item',
       imagePath: null,
-      userId: FirebaseAuth.instance.currentUser?.uid,
+      userId: FirebaseAuth.instance.currentUser!.uid,
       isPrivate: false, // Include the UID of the user
     );
 

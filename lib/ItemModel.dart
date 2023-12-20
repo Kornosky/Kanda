@@ -1,19 +1,21 @@
 class ItemModel {
-  String? id; // Make the ID nullable
-  String? userId; // Add the userId field
+  String id; // Make the ID nullable
+  String userId; // Add the userId field
 
   String title;
   int date;
+  int dateCreated;
   bool isSelected;
   bool isPrivate;
   String description;
   String? imagePath;
 
   ItemModel({
-    this.id,
-    this.userId, // Initialize userId in the constructor
+    required this.id,
+    required this.userId,
     required this.title,
     required this.date,
+    required this.dateCreated,
     required this.isSelected,
     required this.isPrivate,
     required this.description,
@@ -22,9 +24,11 @@ class ItemModel {
 
   // Factory method to create an ItemModel with a generated ID
   factory ItemModel.generateId({
+    required String id,
     required String userId,
     required String title,
     required int date,
+    required int dateCreated,
     required bool isSelected,
     required bool isPrivate,
     required String description,
@@ -35,6 +39,7 @@ class ItemModel {
       userId: userId,
       title: title,
       date: date,
+      dateCreated: dateCreated,
       isSelected: isSelected,
       isPrivate: isPrivate,
       description: description,
@@ -47,6 +52,7 @@ class ItemModel {
     String? userId,
     String? title,
     int? date,
+    int? dateCreated,
     bool? isSelected,
     String? description,
     String? imagePath,
@@ -56,8 +62,9 @@ class ItemModel {
       userId: userId ?? this.userId,
       title: title ?? this.title,
       date: date ?? this.date,
+      dateCreated: dateCreated ?? this.dateCreated,
       isSelected: isSelected ?? this.isSelected,
-      isPrivate: isPrivate ?? this.isPrivate,
+      isPrivate: isPrivate,
       description: description ?? this.description,
       imagePath: imagePath ?? this.imagePath,
     );
@@ -69,6 +76,7 @@ class ItemModel {
       'userId': userId, // Add userId to the toMap method
       'title': title,
       'date': date,
+      'dateCreated': dateCreated,
       'isSelected': isSelected ? 1 : 0,
       'description': description,
       'imagePath': imagePath,
@@ -81,6 +89,7 @@ class ItemModel {
       userId: map['userId'],
       title: map['title'],
       date: map['date'],
+      dateCreated: map['dateCreated'],
       isSelected: map['isSelected'] == 1,
       isPrivate: map['isPrivate'] == 1,
       description: map['description'],

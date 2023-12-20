@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:animate_gradient/animate_gradient.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_app_check/firebase_app_check.dart' as fireBaseAppCheck;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
@@ -10,15 +9,13 @@ import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 //If you just want the latest
 import 'package:timezone/data/latest.dart' as tzlatest;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'ChatScreen.dart';
 import 'DatabaseHelper.dart';
 import 'EditItemPage.dart';
-import 'GamesScreen.dart';
-import 'ItemDetailsScreen.dart';
 import 'ItemModel.dart';
 import 'MyApp.dart';
 import 'ThemeData.dart';
@@ -67,6 +64,9 @@ void main() async {
 
   runApp(MyApp());
 }
+
+// Define enum for sorting options
+enum SortOption { dateAdded, itemDate, random, deleteAll }
 
 class MyHomePage extends StatefulWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -198,6 +198,17 @@ class _MyHomePageState extends State<MyHomePage> {
     await scheduleNotification(newItem);
   }
 
+  void deleteAllItems() {
+    // Add your logic to delete all items from the database or data source
+    // For example, you might use dbHelper.deleteAllItems();
+    dbHelper.deleteItems(items);
+
+    loadItems();
+  }
+
+  // Variable to store the current sorting option
+  SortOption currentSortOption = SortOption.dateAdded;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -208,51 +219,43 @@ class _MyHomePageState extends State<MyHomePage> {
         home: Scaffold(
           appBar: AppBar(
             title: const Text('Kanda'),
-          ),
-          drawer: Drawer(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                const DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
+            actions: [
+              // Add a PopupMenuButton for sorting and additional options
+              PopupMenuButton<SortOption>(
+                onSelected: (SortOption result) {
+                  setState(() {
+                    if (result == SortOption.deleteAll) {
+                      // Handle the logic to delete all items
+                      deleteAllItems();
+                      currentSortOption = result;
+                    } else {
+                      // Handle sorting options
+                      currentSortOption = result;
+                    }
+                  });
+                },
+                itemBuilder: (BuildContext context) =>
+                    <PopupMenuEntry<SortOption>>[
+                  const PopupMenuItem<SortOption>(
+                    value: SortOption.dateAdded,
+                    child: Text('Sort by Date Added'),
                   ),
-                  child: Text('Menu'),
-                ),
-                ListTile(
-                  title: const Text('Chat'),
-                  onTap: () {
-                    // Navigate to the Chat screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ChatScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  title: const Text('Games'),
-                  onTap: () {
-                    // Navigate to the Games screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => GamesScreen()),
-                    );
-                  },
-                  // Add more menu items as needed
-                ),
-                ListTile(
-                  title: const Text('Profile'),
-                  onTap: () {
-                    // Navigate to the Games screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ProfileScreen()),
-                    );
-                  },
-                  // Add more menu items as needed
-                ),
-              ],
-            ),
+                  const PopupMenuItem<SortOption>(
+                    value: SortOption.itemDate,
+                    child: Text('Sort by Item Date'),
+                  ),
+                  const PopupMenuItem<SortOption>(
+                    value: SortOption.random,
+                    child: Text('Sort Randomly'),
+                  ),
+                  const PopupMenuDivider(), // Add a divider before the delete option
+                  const PopupMenuItem<SortOption>(
+                    value: SortOption.deleteAll,
+                    child: Text('Delete All Items'),
+                  ),
+                ],
+              ),
+            ],
           ),
           body: Builder(
             builder: (context) => AnimateGradient(
@@ -273,8 +276,27 @@ class _MyHomePageState extends State<MyHomePage> {
                   } else if (snapshot.hasError) {
                     return Text('Error: ${snapshot.error}');
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Text('No items found.');
+                    return Center(
+                      child: const Text('No items found.'),
+                    );
                   } else {
+                    // Sort the data based on the selected option
+                    List<ItemModel> sortedItems = snapshot.data!;
+                    switch (currentSortOption) {
+                      case SortOption.dateAdded:
+                        // sortedItems.sort((a, b) => a.id.compareTo(b.id));
+                        break;
+                      case SortOption.itemDate:
+                        sortedItems.sort((a, b) => a.date.compareTo(b.date));
+                        break;
+                      case SortOption.random:
+                        // Implement random sorting logic
+                        break;
+                      default:
+                        // Handle the case for SortOption.deleteAll or any other future values
+                        // You can either leave it empty or provide a default sorting logic
+                        break;
+                    }
                     return ListView.builder(
                       itemCount: snapshot.data!.length,
                       itemBuilder: (context, index) {
@@ -282,7 +304,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
                         // Calculate the difference between the current date and the item's date
                         Duration difference = DateTime.now().difference(
-                            DateTime.fromMillisecondsSinceEpoch(item.date));
+                          DateTime.fromMillisecondsSinceEpoch(item.date),
+                        );
 
                         String formattedDate;
 
@@ -296,40 +319,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         }
 
                         return ListTile(
-                          title: Text(item.title),
-                          subtitle: Text(item.description ?? ''),
-                          trailing: Text(formattedDate),
-                          leading: item.imagePath != null && (!kIsWeb)
-                              ? SizedBox(
-                                  width: 56.0,
-                                  height: 56.0,
-                                  child: item.imagePath != null &&
-                                          item.imagePath!.isNotEmpty
-                                      ? CachedNetworkImage(
-                                          imageUrl: item.imagePath!,
-                                          fit: BoxFit.cover,
-                                          placeholder: (context, url) =>
-                                              CircularProgressIndicator(),
-                                          errorWidget: (context, url, error) =>
-                                              Icon(Icons.error),
-                                        )
-                                      : Container(),
-                                )
-                              : null,
-                          onLongPress: () {
-                            editItem(item);
-                          },
-                          onTap: () {
-                            // Navigate to a new screen to show item details
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ItemDetailsScreen(item: item),
-                              ),
+                            // ... your existing ListTile code
                             );
-                          },
-                        );
                       },
                     );
                   }
