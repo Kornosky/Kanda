@@ -28,6 +28,7 @@ class _EditItemPageState extends State<EditItemPage> {
   late TextEditingController descriptionController;
   late DateTime selectedDate; // Variable to store the selected date
   File? _pickedImage; // Variable to store the picked image file
+  bool _isDirty = false;
 
   @override
   void initState() {
@@ -38,97 +39,170 @@ class _EditItemPageState extends State<EditItemPage> {
     selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.item.date);
     _pickedImage =
         widget.item.imagePath != null ? File(widget.item.imagePath!) : null;
+
+    // Add listeners to controllers
+    titleController.addListener(_onChanged);
+    descriptionController.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    // Remove listeners when disposing of the widget
+    titleController.removeListener(_onChanged);
+    descriptionController.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    final bool nextIsDirty = _checkIfDirty();
+    if (nextIsDirty == _isDirty) {
+      return;
+    }
+    setState(() {
+      _isDirty = nextIsDirty;
+    });
+  }
+
+  bool _checkIfDirty() {
+    // Check for changes in each controller and the picked image
+    final bool titleDirty = widget.item.title != titleController.text;
+    final bool descriptionDirty =
+        widget.item.description != descriptionController.text;
+    final bool imageDirty = _pickedImage != null;
+
+    // Return true if any of them is dirty
+    return titleDirty || descriptionDirty || imageDirty;
+  }
+
+  Future<bool> _showDialog(BuildContext context) async {
+    final bool? shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Are you sure?'),
+          content: const Text('Any unsaved changes will be lost!'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Yes, discard my changes'),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: const Text('No, continue editing'),
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    return shouldDiscard ?? false; // Return false if shouldDiscard is null
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Item'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            const Text('Title'),
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                hintText: 'Enter title',
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            const Text('Description'),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                hintText: 'Enter description',
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            const Text('Date'),
-            ElevatedButton(
-              onPressed: () {
-                // Show date picker and update the selectedDate
-                pickDate();
-              },
-              child: Text(DateFormat('yyyy-MM-dd').format(selectedDate)),
-            ),
-            // Display the picked image if available
-            SizedBox(
-              width: 240.0,
-              height: 240.0,
-              child: _pickedImage != null && _pickedImage!.path.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: _pickedImage!.path,
-                      fit: BoxFit.cover,
-                      width: double.infinity, // Adjust to your layout needs
-                      height: double.infinity, // Adjust to your layout needs
-                      placeholder: (context, url) => Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      errorWidget: (context, url, error) => Center(
-                        child: Icon(Icons.error),
-                      ),
-                    )
-                  : Container(),
-            ),
+    return PopScope(
+        canPop: !_isDirty,
+        onPopInvoked: (bool didPop) {
+          if (!didPop) {
+            //TODO: somewhere around here I need to put deletion code if it's an empty one
+            _showDialog(context);
+          } else {
+            return;
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Edit Item'),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              children: [
+                const Text('Title'),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter title',
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                const Text('Description'),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter description',
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                const Text('Date'),
+                ElevatedButton(
+                  onPressed: () {
+                    // Show date picker and update the selectedDate
+                    pickDate();
+                  },
+                  child: Text(DateFormat('yyyy-MM-dd').format(selectedDate)),
+                ),
+                // Display the picked image if available
+                SizedBox(
+                  width: 240.0,
+                  height: 240.0,
+                  child: _pickedImage != null && _pickedImage!.path.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: _pickedImage!.path,
+                          fit: BoxFit.cover,
+                          width: double.infinity, // Adjust to your layout needs
+                          height:
+                              double.infinity, // Adjust to your layout needs
+                          placeholder: (context, url) => Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          errorWidget: (context, url, error) => Center(
+                            child: Icon(Icons.error),
+                          ),
+                        )
+                      : Container(),
+                ),
 
-            const SizedBox(height: 16.0),
+                const SizedBox(height: 16.0),
 
-            // Button to pick an image
-            ElevatedButton(
-              onPressed: () {
-                // Show image picker
-                pickImage();
-              },
-              child: const Text('Pick Image'),
-            ),
-            // Delete button
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                // Save the edited item
-                saveChanges();
-              },
-              child: const Text('Save Changes'),
-            ),
+                // Button to pick an image
+                ElevatedButton(
+                  onPressed: () {
+                    // Show image picker
+                    pickImage();
+                  },
+                  child: const Text('Pick Image'),
+                ),
+                // Delete button
+                const SizedBox(height: 16.0),
+                ElevatedButton(
+                  onPressed: () {
+                    // Save the edited item
+                    saveChanges();
+                  },
+                  child: const Text('Save Changes'),
+                ),
 
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                // Prompt the user before deleting
-                showDeleteConfirmationDialog();
-              },
-              style: ElevatedButton.styleFrom(
-                primary: Colors.red, // Use red color for delete button
-              ),
-              child: const Text('Delete'),
+                const SizedBox(height: 16.0),
+                ElevatedButton(
+                  onPressed: () {
+                    // Prompt the user before deleting
+                    showDeleteConfirmationDialog();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.red, // Use red color for delete button
+                  ),
+                  child: const Text('Delete'),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 
   Future<void> pickDate() async {
@@ -223,7 +297,7 @@ class _EditItemPageState extends State<EditItemPage> {
       // Upload
       await ref
           .putData(
-        await pickedImage!.readAsBytes(),
+        await pickedImage.readAsBytes(),
         SettableMetadata(contentType: 'image/jpeg'),
       )
           .whenComplete(() async {
@@ -232,10 +306,10 @@ class _EditItemPageState extends State<EditItemPage> {
         });
       });
     } else {
-      await ref.putFile(pickedImage!);
+      await ref.putFile(pickedImage);
       // Get the URL of the uploaded image
       String downloadURL = await ref.getDownloadURL();
-      imageCache[pickedImage!.path] = downloadURL;
+      imageCache[pickedImage.path] = downloadURL;
     }
 
     return imageCache[pickedImage!.path];

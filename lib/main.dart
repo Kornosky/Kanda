@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:animate_gradient/animate_gradient.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_app_check/firebase_app_check.dart' as fireBaseAppCheck;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
@@ -16,6 +17,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'DatabaseHelper.dart';
 import 'EditItemPage.dart';
+import 'ItemDetailsScreen.dart';
 import 'ItemModel.dart';
 import 'MyApp.dart';
 import 'ThemeData.dart';
@@ -187,15 +189,25 @@ class _MyHomePageState extends State<MyHomePage> {
   void addItem() async {
     // Insert the item into the database and get the Firestore-assigned ID
     ItemModel newItem = await dbHelper.addItem();
+    //TODO: add the item afterwards, when changes are actually made to it
 
     // Load items from the database again to refresh the list
-    await loadItems();
+    loadItems();
 
     // Initiate the edit item operation/screen after the item is added
-    await editItem(newItem);
+    editItem(newItem);
 
     // Schedule a notification for the new item
-    await scheduleNotification(newItem);
+    // TODO: move where the notification is being scheduled.
+    // scheduleNotification(newItem);
+  }
+
+  String _formatDate(int timestamp) {
+    // Convert the timestamp to a DateTime object
+    DateTime date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+
+    // Format the date as "Created at: Month Day, Year Hour:Minute AM/PM"
+    return '${DateFormat('MMMM dd, y H:mm a').format(date)}';
   }
 
   void deleteAllItems() {
@@ -304,8 +316,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                         // Calculate the difference between the current date and the item's date
                         Duration difference = DateTime.now().difference(
-                          DateTime.fromMillisecondsSinceEpoch(item.date),
-                        );
+                            DateTime.fromMillisecondsSinceEpoch(item.date));
 
                         String formattedDate;
 
@@ -319,8 +330,53 @@ class _MyHomePageState extends State<MyHomePage> {
                         }
 
                         return ListTile(
-                            // ... your existing ListTile code
+                          title: Text(item.title),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.description ?? ''),
+                              Text(
+                                "${_formatDate(item.dateCreated)}",
+                                style: TextStyle(
+                                  fontSize:
+                                      8.0, // Adjust the font size as needed
+                                  // You can also apply other text styles here, such as color, fontWeight, etc.
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: Text(formattedDate),
+                          leading: item.imagePath != null && (!kIsWeb)
+                              ? SizedBox(
+                                  width: 56.0,
+                                  height: 56.0,
+                                  child: item.imagePath != null &&
+                                          item.imagePath!.isNotEmpty
+                                      ? CachedNetworkImage(
+                                          imageUrl: item.imagePath!,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              CircularProgressIndicator(),
+                                          errorWidget: (context, url, error) =>
+                                              Icon(Icons.error),
+                                        )
+                                      : Container(),
+                                )
+                              : null,
+                          onLongPress: () {
+                            editItem(item);
+                          },
+                          onTap: () {
+                            // Navigate to a new screen to show item details
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ItemDetailsScreen(item: item),
+                              ),
                             );
+                          },
+                        );
                       },
                     );
                   }
