@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "411167207929",
+    "firebase_url": "https://kanda-3f009-default-rtdb.firebaseio.com",
     "project_id": "kanda-3f009",
     "storage_bucket": "kanda-3f009.appspot.com"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "411167207929-ohk9nvple3sgb5o5pl2dn4magtdmu88d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.github.kornosky.kanda",
+            "certificate_hash": "e4762a229530054f23b7f6cc7679213e9f6bd4b8"
+          }
+        },
         {
           "client_id": "411167207929-qbkkg8n62a198b8r4hh41bjq4j65g0o5.apps.googleusercontent.com",
           "client_type": 3
@@ -29,6 +38,13 @@
             {
               "client_id": "411167207929-qbkkg8n62a198b8r4hh41bjq4j65g0o5.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "411167207929-el1pf4otr0s27k4f3mnl9nflkng6qvs2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.github.kornosky.kanda"
+              }
             }
           ]
         }

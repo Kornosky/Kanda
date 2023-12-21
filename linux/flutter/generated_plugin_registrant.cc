@@ -6,9 +6,25 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <awesome_notifications/awesome_notifications_plugin.h>
+#include <awesome_notifications_core/awesome_notifications_core_plugin.h>
+#include <desktop_webview_auth/desktop_webview_auth_plugin.h>
+#include <emoji_picker_flutter/emoji_picker_flutter_plugin.h>
 #include <file_selector_linux/file_selector_plugin.h>
 
 void fl_register_plugins(FlPluginRegistry* registry) {
+  g_autoptr(FlPluginRegistrar) awesome_notifications_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "AwesomeNotificationsPlugin");
+  awesome_notifications_plugin_register_with_registrar(awesome_notifications_registrar);
+  g_autoptr(FlPluginRegistrar) awesome_notifications_core_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "AwesomeNotificationsCorePlugin");
+  awesome_notifications_core_plugin_register_with_registrar(awesome_notifications_core_registrar);
+  g_autoptr(FlPluginRegistrar) desktop_webview_auth_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "DesktopWebviewAuthPlugin");
+  desktop_webview_auth_plugin_register_with_registrar(desktop_webview_auth_registrar);
+  g_autoptr(FlPluginRegistrar) emoji_picker_flutter_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "EmojiPickerFlutterPlugin");
+  emoji_picker_flutter_plugin_register_with_registrar(emoji_picker_flutter_registrar);
   g_autoptr(FlPluginRegistrar) file_selector_linux_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FileSelectorPlugin");
   file_selector_plugin_register_with_registrar(file_selector_linux_registrar);

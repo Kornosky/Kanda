@@ -32,9 +32,8 @@ dependencies:
     sdk: flutter
   sqflite: ^2.0.0
   path: ^1.8.3
-  intl: ^0.17.0 # Add the latest version of the intl package
+  intl: ^0.18.1 # Add the latest version of the intl package
   image_picker: ^1.0.5
-  flutter_local_notifications: ^16.2.0
   timezone: ^0.9.0
   cloud_firestore: ^4.13.6
   firebase_core: ^2.24.2
@@ -44,11 +43,20 @@ dependencies:
   rnd: any
   animate_gradient: any
   firebase_storage: any
-
+  google_sign_in: any
+  sign_in_with_apple: any
+  firebase_ui_auth: any
+  firebase_ui_oauth_google: any
+  firebase_ui_oauth_apple: any
+  firebase_app_check: any
+  emoji_picker_flutter: any
+  awesome_notifications: ^0.8.1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   flame: ^1.12.0
+  awesome_notifications_core: ^0.8.1
+  cached_network_image: any
 
 dev_dependencies:
   flutter_test:
@@ -82,7 +90,10 @@ flutter:
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/assets-and-images/#from-packages
-
+fonts:
+  - family: SocialIcons
+    fonts:
+      - asset: packages/firebase_ui_auth/fonts/SocialIcons.ttf
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a

@@ -1,10 +1,14 @@
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart'; // Import this for date formatting
+import 'package:path/path.dart' as path;
 
 import 'DatabaseHelper.dart';
 import 'ItemModel.dart';
@@ -24,6 +28,7 @@ class _EditItemPageState extends State<EditItemPage> {
   late TextEditingController descriptionController;
   late DateTime selectedDate; // Variable to store the selected date
   File? _pickedImage; // Variable to store the picked image file
+  bool _isDirty = false;
 
   @override
   void initState() {
@@ -34,90 +39,170 @@ class _EditItemPageState extends State<EditItemPage> {
     selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.item.date);
     _pickedImage =
         widget.item.imagePath != null ? File(widget.item.imagePath!) : null;
+
+    // Add listeners to controllers
+    titleController.addListener(_onChanged);
+    descriptionController.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    // Remove listeners when disposing of the widget
+    titleController.removeListener(_onChanged);
+    descriptionController.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    final bool nextIsDirty = _checkIfDirty();
+    if (nextIsDirty == _isDirty) {
+      return;
+    }
+    setState(() {
+      _isDirty = nextIsDirty;
+    });
+  }
+
+  bool _checkIfDirty() {
+    // Check for changes in each controller and the picked image
+    final bool titleDirty = widget.item.title != titleController.text;
+    final bool descriptionDirty =
+        widget.item.description != descriptionController.text;
+    final bool imageDirty = _pickedImage != null;
+
+    // Return true if any of them is dirty
+    return titleDirty || descriptionDirty || imageDirty;
+  }
+
+  Future<bool> _showDialog(BuildContext context) async {
+    final bool? shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Are you sure?'),
+          content: const Text('Any unsaved changes will be lost!'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Yes, discard my changes'),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: const Text('No, continue editing'),
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    return shouldDiscard ?? false; // Return false if shouldDiscard is null
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Item'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            const Text('Title'),
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                hintText: 'Enter title',
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            const Text('Description'),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                hintText: 'Enter description',
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            const Text('Date'),
-            ElevatedButton(
-              onPressed: () {
-                // Show date picker and update the selectedDate
-                pickDate();
-              },
-              child: Text(DateFormat('yyyy-MM-dd').format(selectedDate)),
-            ),
-            // Display the picked image if available
-            SizedBox(
-              width: 240.0,
-              height: 240.0,
-              child: _pickedImage != null &&
-                      (!kIsWeb && File(_pickedImage!.path).existsSync())
-                  ? Image.file(
-                      _pickedImage!,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(),
-            ),
+    return PopScope(
+        canPop: !_isDirty,
+        onPopInvoked: (bool didPop) {
+          if (!didPop) {
+            //TODO: somewhere around here I need to put deletion code if it's an empty one
+            _showDialog(context);
+          } else {
+            return;
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Edit Item'),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              children: [
+                const Text('Title'),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter title',
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                const Text('Description'),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter description',
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                const Text('Date'),
+                ElevatedButton(
+                  onPressed: () {
+                    // Show date picker and update the selectedDate
+                    pickDate();
+                  },
+                  child: Text(DateFormat('yyyy-MM-dd').format(selectedDate)),
+                ),
+                // Display the picked image if available
+                SizedBox(
+                  width: 240.0,
+                  height: 240.0,
+                  child: _pickedImage != null && _pickedImage!.path.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: _pickedImage!.path,
+                          fit: BoxFit.cover,
+                          width: double.infinity, // Adjust to your layout needs
+                          height:
+                              double.infinity, // Adjust to your layout needs
+                          placeholder: (context, url) => Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          errorWidget: (context, url, error) => Center(
+                            child: Icon(Icons.error),
+                          ),
+                        )
+                      : Container(),
+                ),
 
-            const SizedBox(height: 16.0),
+                const SizedBox(height: 16.0),
 
-            // Button to pick an image
-            ElevatedButton(
-              onPressed: () {
-                // Show image picker
-                pickImage();
-              },
-              child: const Text('Pick Image'),
-            ),
-            // Delete button
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                // Save the edited item
-                saveChanges();
-              },
-              child: const Text('Save Changes'),
-            ),
+                // Button to pick an image
+                ElevatedButton(
+                  onPressed: () {
+                    // Show image picker
+                    pickImage();
+                  },
+                  child: const Text('Pick Image'),
+                ),
+                // Delete button
+                const SizedBox(height: 16.0),
+                ElevatedButton(
+                  onPressed: () {
+                    // Save the edited item
+                    saveChanges();
+                  },
+                  child: const Text('Save Changes'),
+                ),
 
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                // Prompt the user before deleting
-                showDeleteConfirmationDialog();
-              },
-              style: ElevatedButton.styleFrom(
-                primary: Colors.red, // Use red color for delete button
-              ),
-              child: const Text('Delete'),
+                const SizedBox(height: 16.0),
+                ElevatedButton(
+                  onPressed: () {
+                    // Prompt the user before deleting
+                    showDeleteConfirmationDialog();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.red, // Use red color for delete button
+                  ),
+                  child: const Text('Delete'),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 
   Future<void> pickDate() async {
@@ -165,35 +250,93 @@ class _EditItemPageState extends State<EditItemPage> {
     );
   }
 
-  // Method to pick an image using the image_picker package
+  // Todo: Store this in app cache data for use across views
+  Map<String, String> imageCache = {}; // Map to store image download URLs
+
+  // Pick image and just set it as the current image for display purposes
   Future<void> pickImage() async {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
-
+    var image = null;
     if (pickedFile != null) {
-      setState(() {
-        _pickedImage = File(pickedFile.path);
-      });
+      String filePath = pickedFile.path;
 
-      // Upload the image to Firebase Storage
-      uploadImageToFirebaseStorage();
+      // Check if the image is already in the cache
+      if (imageCache.containsKey(filePath)) {
+        image = File(filePath);
+      } else {
+        if (kIsWeb) {
+          final response = await http.get(Uri.parse(filePath));
+          final List<int> bytes = response.bodyBytes;
+          image = File.fromRawPath(Uint8List.fromList(bytes));
+        } else {
+          image = File(filePath);
+        }
+      }
+
+      setState(() {
+        _pickedImage = image;
+      });
     }
   }
 
-  Future<void> uploadImageToFirebaseStorage() async {
-    try {
-      final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final firebase_storage.Reference ref = firebase_storage
-          .FirebaseStorage.instance
-          .ref()
-          .child('images/$fileName.jpg');
+  Future<String?> uploadImageToFirebaseStorage(File pickedImage) async {
+    // Only concern is uploading to database and return the database path for future retrieval
+    final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+    var userID = FirebaseAuth.instance.currentUser?.uid;
+    final Reference ref = FirebaseStorage.instance
+        .ref()
+        .child('images/itemImages/$userID/$fileName.jpg');
 
-      await ref.putFile(_pickedImage!);
+    if (await isImageAlreadyUploaded(pickedImage!)) {
+      // Image is already uploaded, no need to re-upload
+      return imageCache[pickedImage!.path];
+    }
 
+    if (kIsWeb) {
+      // Upload
+      await ref
+          .putData(
+        await pickedImage.readAsBytes(),
+        SettableMetadata(contentType: 'image/jpeg'),
+      )
+          .whenComplete(() async {
+        await ref.getDownloadURL().then((value) {
+          imageCache[pickedImage!.path] = value;
+        });
+      });
+    } else {
+      await ref.putFile(pickedImage);
       // Get the URL of the uploaded image
-      _pickedImage = File(await ref.getDownloadURL());
+      String downloadURL = await ref.getDownloadURL();
+      imageCache[pickedImage.path] = downloadURL;
+    }
+
+    return imageCache[pickedImage!.path];
+  }
+
+  Future<bool> isImageAlreadyUploaded(File imageFile) async {
+    // Check if the image file is already in the cache
+    if (imageCache.containsKey(imageFile.path)) {
+      return true;
+    }
+    var userID = FirebaseAuth.instance.currentUser?.uid;
+
+    // If not in cache, check Firebase Storage
+    final String fileName = path.basenameWithoutExtension(imageFile.path);
+    final Reference ref = FirebaseStorage.instance
+        .ref()
+        .child('images/itemImages/$userID/$fileName.jpg');
+
+    try {
+      // Attempt to get the download URL
+      String downloadURL = await ref.getDownloadURL();
+      // Cache the download URL
+      imageCache[imageFile.path] = downloadURL;
+      return true;
     } catch (e) {
-      print('Error uploading image: $e');
+      // If the object does not exist, return false
+      return false;
     }
   }
 
@@ -215,13 +358,36 @@ class _EditItemPageState extends State<EditItemPage> {
       title: editedTitle,
       description: editedDescription,
       date: selectedDate.millisecondsSinceEpoch,
-      imagePath: _pickedImage?.path,
     );
 
-    // Update the item in the database using widget.dbHelper
-    // Assume doc id will be available by this point
-    widget.dbHelper.updateItem(updatedItem.id!, updatedItem.toMap());
+    // If an image is picked and we are not on the web
+    if (_pickedImage != null && !kIsWeb) {
+      // Start uploading the image to Firebase Storage
+      Future<String?> uploadTask = uploadImageToFirebaseStorage(_pickedImage!);
 
-    Navigator.pop(context);
+      // Continue with other operations while the image is uploading
+      uploadTask.then((downloadURL) {
+        if (downloadURL != null) {
+          // If the download URL is available, update the item
+          updatedItem = updatedItem.copyWith(imagePath: downloadURL);
+          widget.dbHelper.updateItem(updatedItem.id!, updatedItem.toMap());
+
+          // Pop the navigator when everything is done
+          Navigator.pop(context);
+        } else {
+          // Handle the case where download URL is null
+          print('Download URL is null. Handle accordingly.');
+        }
+      }).catchError((error) {
+        // Handle errors during the upload
+        print('Error during upload: $error');
+      });
+    } else {
+      // If no image is picked or on the web, update the item directly
+      widget.dbHelper.updateItem(updatedItem.id!, updatedItem.toMap());
+
+      // Pop the navigator when everything is done
+      Navigator.pop(context);
+    }
   }
 }

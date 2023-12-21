@@ -8,6 +8,17 @@
   },
   "hosting": {
     "public": "public",
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "https://kanda-3f009.web.app/"
+          }
+        ]
+      }
+      ],
     "ignore": [
       "firebase.json",
       "**/.*",

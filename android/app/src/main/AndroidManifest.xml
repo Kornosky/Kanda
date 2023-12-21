@@ -34,4 +34,7 @@
             android:value="com.google.firebase.components.ComponentRegistrar" />
         <!-- ... other Firebase-related meta-data ... -->
     </application>
+
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 </manifest>

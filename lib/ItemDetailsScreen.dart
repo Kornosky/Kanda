@@ -9,7 +9,7 @@ import 'ItemModel.dart';
 class ItemDetailsScreen extends StatelessWidget {
   final ItemModel item;
 
-  ItemDetailsScreen({required this.item});
+  const ItemDetailsScreen({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
